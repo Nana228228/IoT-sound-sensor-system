@@ -1,30 +1,27 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ArduinoJson.h>
 
-// ========================================================
-// ⚠️ SEGURIDAD: NUNCA COMPARTAS TUS CREDENCIALES REALES
-// Reemplaza estos valores con los de tu propia red local
-// ========================================================
 const char* ssid = "NOME_DA_SUA_REDE_WIFI";       
 const char* password = "SENHA_DA_SUA_REDE";  
 
 // ========================================================
-// CONFIGURACIÓN MQTT
+// CONFIGURAÇÃO MQTT
 // ========================================================
 const char* mqtt_server = "broker.hivemq.com";
 const int mqtt_port = 1883;
-// Usa un tópico único para evitar interferencias con otros usuarios
-const char* mqtt_topic = "teu_projeto/sensor/ruido/estudante"; 
+// Use um tópico único para evitar interferências com outros usuários
+const char* mqtt_topic = "seu_projeto/sensor/ruido/estudante"; 
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Configuración de Pines ESP32
-const int pinEnvelope = 34; // Mide amplitud del sonido
-const int pinGate = 18;     // Mide transitorios rápidos
+// Configuração dos Pinos do ESP32
+const int pinEnvelope = 34; // Mede a amplitude do som (Volume)
+const int pinGate = 18;     // Mede transientes rápidos (Ruídos súbitos)
 
 unsigned long ultimoEnvio = 0;
-const long intervalo = 1000; // 1 segundo
+const long intervalo = 1000; // Enviar dados a cada 1 segundo
 
 void setup() {
   Serial.begin(115200);
@@ -32,7 +29,7 @@ void setup() {
   pinMode(pinEnvelope, INPUT);
   pinMode(pinGate, INPUT);
 
-  Serial.print("Conectando a Wi-Fi: ");
+  Serial.print("Conectando ao Wi-Fi: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
   
@@ -40,23 +37,23 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("\n[Wi-Fi] Conectado exitosamente.");
+  Serial.println("\n[Wi-Fi] Conectado com sucesso.");
 
   client.setServer(mqtt_server, mqtt_port);
 }
 
 void reconectarMQTT() {
   while (!client.connected()) {
-    Serial.print("Intentando conexión MQTT...");
+    Serial.print("Tentando conexão MQTT...");
     String clientId = "ESP32_Device_";
     clientId += String(random(0xffff), HEX);
     
     if (client.connect(clientId.c_str())) {
-      Serial.println(" ¡Conectado al Broker!");
+      Serial.println(" Conectado ao Broker!");
     } else {
-      Serial.print(" falló, estado: ");
+      Serial.print(" falhou, estado: ");
       Serial.print(client.state());
-      Serial.println(" Intentando en 5 segundos...");
+      Serial.println(" Tentando novamente em 5 segundos...");
       delay(5000);
     }
   }
@@ -68,32 +65,39 @@ void loop() {
   }
   client.loop();
 
-  unsigned long tiempoActual = millis();
+  unsigned long tempoAtual = millis();
   
-  if (tiempoActual - ultimoEnvio >= intervalo) {
-    ultimoEnvio = tiempoActual;
+  if (tempoAtual - ultimoEnvio >= intervalo) {
+    ultimoEnvio = tempoAtual;
 
-    int volumenCrudo = analogRead(pinEnvelope);
+    // 1. Ler a voltagem bruta real do sensor (0 a 4095)
+    int volumeBruto = analogRead(pinEnvelope);
     
-    // Calibración de sensibilidad para ventanas (0.25)
-    float multiplicadorSensibilidad = 0.25; 
-    float decibeliosReales = 40.0 + (volumenCrudo * multiplicadorSensibilidad); 
+    // 2. CONVERSÃO FÍSICA PARA DECIBÉIS (dB)
+    // Calibração de sensibilidade para janelas fechadas (0.25)
+    float multiplicadorSensibilidade = 0.25; 
+    float decibeisReais = 40.0 + (volumeBruto * multiplicadorSensibilidade); 
     
-    if (decibeliosReales > 100.0) {
-      decibeliosReales = 100.0;
+    // Limite físico de segurança para o gráfico
+    if (decibeisReais > 100.0) {
+      decibeisReais = 100.0;
     }
 
+    // 3. Ler o estado do Gate (Interrupção)
     int estadoGate = digitalRead(pinGate);
     String gateString = (estadoGate == HIGH) ? "true" : "false";
 
+    // 4. Empacotar os dados em formato JSON para o MQTT
     String payload = "{";
-    payload += "\"volumen\":" + String(decibeliosReales, 1) + ",";
+    payload += "\"volume\":" + String(decibeisReais, 1) + ",";
     payload += "\"gate\":" + gateString;
     payload += "}";
 
-    Serial.print("Enviando -> ");
+    // 5. Imprimir no Monitor Serial
+    Serial.print("Enviando dados -> ");
     Serial.println(payload);
 
+    // 6. Publicar no Node-RED via MQTT
     client.publish(mqtt_topic, payload.c_str());
   }
 }
