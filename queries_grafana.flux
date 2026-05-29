@@ -8,7 +8,7 @@
 from(bucket: "NOME_DO_SEU_BUCKET") // Substitua pelo nome do seu bucket
   |> range(start: v.timeRangeStart, stop: v.timeRangeStop)
   |> filter(fn: (r) => r._measurement == "sensor_ruido")
-  |> filter(fn: (r) => r._field == "decibelios_reales")
+  |> filter(fn: (r) => r._field == "decibelios_reais")
   |> yield(name: "Ruido_Acustico_dB")
 
 // 🟡 QUERY B: Tráfego e Congestionamento (Eixo Direito - Porcentagem)
