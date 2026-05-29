@@ -1,0 +1,69 @@
+[
+    {
+        "id": "mqtt_in_device",
+        "type": "mqtt in",
+        "z": "iot_flow_ods11",
+        "name": "Inscrição MQTT ESP32",
+        "topic": "seu_projeto/sensor/ruido/estudante",
+        "qos": "0",
+        "datatype": "json",
+        "broker": "broker_hivemq_pop",
+        "x": 160,
+        "y": 120,
+        "wires": [
+            [
+                "func_parser_influx"
+            ]
+        ]
+    },
+    {
+        "id": "func_parser_influx",
+        "type": "function",
+        "z": "iot_flow_ods11",
+        "name": "Formatar para InfluxDB",
+        "func": "// 1. Extrair o valor calculado pelo ESP32\nvar volumeESP = msg.payload.volume;\n\n// 2. Forçar formato decimal (Float) para evitar conflitos no InfluxDB\nvar decibeisFinais = parseFloat(volumeESP);\n\n// 3. Recuperar o tráfego da API de Mapas (Ex. TomTom)\nvar congestionamentoVial = context.global.get('indice_trafico') || 0;\n\n// 4. Formatar o payload para o Banco de Dados\n// Nota: As chaves do JSON foram mantidas para não quebrar a consulta no Grafana\nmsg.payload = {\n    decibelios_reales: decibeisFinais,\n    congestio_api: congestionamentoVial\n};\n\n// 5. Etiquetas (Tags) anonimizadas para segurança\nmsg.tags = {\n    estudante: \"usuario_github\",\n    sensor: \"sparkfun_generico\"\n};\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 120,
+        "wires": [
+            [
+                "influxdb_out_device",
+                "debug_console_device"
+            ]
+        ]
+    },
+    {
+        "id": "influxdb_out_device",
+        "type": "influxdb out",
+        "z": "iot_flow_ods11",
+        "name": "Salvar no InfluxDB",
+        "measurement": "sensor_ruido",
+        "precision": "",
+        "retentionPolicy": "",
+        "bucket": "sensor_ruido",
+        "x": 660,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "debug_console_device",
+        "type": "debug",
+        "z": "iot_flow_ods11",
+        "name": "Console de Depuração",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 660,
+        "y": 160,
+        "wires": []
+    }
+]
