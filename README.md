@@ -3,7 +3,7 @@
 ## 📺 Apresentação e Demonstração
 Clique no link abaixo para assistir ao pitch do projeto e a demonstração da infraestrutura em tempo real operando com os dados do sensor:
 
-▶️ **[Assistir à Demonstração no YouTube](COLE_O_SEU_LINK_AQUI)**
+▶️ **[Assistir à Demonstração no YouTube](https://www.youtube.com/watch?v=1LrNW-aGjaU)**
 
 ---
 
