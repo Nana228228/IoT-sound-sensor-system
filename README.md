@@ -15,6 +15,7 @@ Alinhado ao **ODS 11 da ONU (Cidades e Comunidades Sustentáveis)**, o sistema e
 ---
 
 ## 🏗️ Arquitetura do Sistema
+<img width="912" height="571" alt="Image" src="https://github.com/user-attachments/assets/bf2f0451-1fd2-4357-8050-4fc592a05c3f" />
 
 A solução foi construída utilizando uma arquitetura distribuída em nuvem:
 
